@@ -1,0 +1,167 @@
+const BOARD_URI = 'https://www3.rocketbbs.com/13/bbs.cgi?id=umiumi'
+const BOARD_LOG = '&mode=view_log'
+const BOARD_PAGE = '&page='
+
+browser = browsercontrol(BC_MSEDGE)
+tab = browser.new(BOARD_URI)
+ub = @{
+    "board": [],
+    "log": []
+}@
+for form in tab.document.querySelectorAll('form[method=GET]')
+    th = parse_thread(form)
+    ub.board += th
+next
+for page = 2 to 20
+    tab.navigate("<#BOARD_URI><#BOARD_PAGE><#page>")
+    for form in tab.document.querySelectorAll('form[method=GET]')
+        th = parse_thread(form)
+        ub.board += th
+    next
+next
+
+// 過去ログ
+tab.navigate("<#BOARD_URI><#BOARD_LOG>")
+for table in tab.document.querySelectorAll('div[align=center][style]>table')
+    th = parse_log_thread(table)
+    ub.log += th
+next
+for page = 2 to 117
+    tab.navigate("<#BOARD_URI><#BOARD_LOG><#BOARD_PAGE><#page>")
+    for table in tab.document.querySelectorAll('div[align=center][style]>table')
+        th = parse_log_thread(table)
+        ub.log += th
+    next
+next
+
+json = tojson(ub, TRUE)
+fput(fopen('../ub.json', F_WRITE8 or F_AUTOCLOSE), json, F_ALLTEXT)
+
+textblock THREAD
+{
+    "title": null,
+    "author": null,
+    "no": null,
+    "datetime": null,
+    "content": null,
+    "color": null,
+    "response": []
+}
+endtextblock
+textblock RESPONSE
+{
+    "thread_no": null,
+    "title": null,
+    "author": null,
+    "no": null,
+    "datetime": null,
+    "content": null,
+    "color": null
+}
+endtextblock
+
+function new_thread(title: string, author: string, no: number, datetime: string, content: string, color: string)
+    result = fromjson(THREAD)
+    result.title = title
+    result.author = author
+    result.no = no
+    result.datetime = datetime
+    result.content = content
+    result.color = color
+fend
+function new_response(thread_no: number, title: string, author: string, no: number, datetime: string, content: string, color: string)
+    result = fromjson(RESPONSE)
+    result.thread_no = thread_no
+    result.title = title
+    result.author = author
+    result.no = no
+    result.datetime = datetime
+    result.content = content
+    result.color = color
+fend
+
+function parse_thread(form)
+    tr = form.querySelectorAll('div>table>tbody>tr')
+    ta = parse_title(tr[0].textContent)
+    title = ta[0]
+    author = ta[1]
+
+    dt = tr[1].querySelector('td>div').textContent
+    dt = parse_datetime(dt)
+    no = dt[0]
+    datetime = dt[1]
+
+    tables = tr[1].querySelectorAll('td[colspan]>table')
+    span = tables[0].querySelector('span')
+
+    content = span.innerHTML
+    color = span.style.color
+
+    result = new_thread(title, author, no, datetime, content, color)
+
+
+    // レスのパース
+    for i = 1 to length(tables) - 1 step 2
+        res = parse_response(tables[i], no)
+        result.response += res
+    next
+fend
+function parse_response(table, thread_no)
+    tr = table.querySelectorAll('tr')
+    ta = parse_title(tr[0].textContent)
+    title = ta[0]
+    author = ta[1]
+
+    dt_content = tr[1].querySelector('div[align][style]').textContent
+    dt = parse_datetime(dt_content)
+    no = dt[0]
+    datetime = dt[1]
+
+    span = tr[2].querySelector('span')
+    content = span.innerHTML
+    color = span.style.color
+
+    result = new_response(thread_no, title, author, no, datetime, content, color)
+fend
+
+function parse_title(content: string)
+    content = trim(content)
+    slash = pos('/', content, -1)
+    title = trim(copy(content, 2, slash-2))
+    author = trim(copy(content, slash+1))
+    result = [title, author]
+fend
+function parse_datetime(content: string)
+    sp = split(trim(content))
+    no = val(replace(sp[0], 'No.', ''))
+    date = replace(sp[1], '\([^)]+\)', '', TRUE)
+    time = sp[2]
+    result = [no, "<#date> <#time>"]
+fend
+
+function parse_log_thread(table)
+    tr = table.querySelectorAll('tr')
+    b = tr[0].querySelector('b')
+    ta = parse_title(b.textContent)
+    title = ta[0]
+    author = ta[1]
+
+    dt_content = tr[1].querySelector('div[align][style]').textContent
+    dt = parse_datetime(dt_content)
+    no = dt[0]
+    datetime = dt[1]
+
+    tables = tr[1].querySelectorAll('td[colspan]>table')
+    span = tables[0].querySelector('span')
+
+    content = span.innerHTML
+    color = span.style.color
+
+    result = new_thread(title, author, no, datetime, content, color)
+
+    // レスのパース
+    for i = 1 to length(tables) - 1 step 2
+        res = parse_response(tables[i], no)
+        result.response += res
+    next
+fend
