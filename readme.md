@@ -8,6 +8,9 @@
 
 - `ub.json`: json化された[UWSC掲示板](https://www3.rocketbbs.com/13/bbs.cgi?id=umiumi)の内容
 - `ubjson_gen/ubjson_gen.uws`: `ub.json`を出力するスクリプト
+- `ub_old.json`: json化された旧UWSC掲示板の内容
+- `ubjson_gen/ubjson_oldboard_gen.uws`: `ub_old.json`を出力するスクリプト
+    - umiumiさん製過去ログ検索ツールのhtmlフォルダが別途必要
 
 ### jsonファイルの構成
 
@@ -22,6 +25,7 @@
             "datetime": "投稿日時",
             "content": "投稿内容",
             "color": "投稿の色",
+            "file": "元のページ番号またはファイル名",
             // レス投稿の配列
             "response": [
                 {
@@ -49,10 +53,6 @@
 }
 ```
 
-## 旧掲示板について
-
-アクセス手段がないので含まれていません\
-旧掲示板のログをお持ちの方がいたらご連絡ください
 
 ## 検索ツール
 
