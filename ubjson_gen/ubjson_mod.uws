@@ -1,0 +1,43 @@
+textblock THREAD
+{
+    "title": null,
+    "author": null,
+    "no": null,
+    "datetime": null,
+    "content": null,
+    "color": null,
+    "file": null,
+    "response": []
+}
+endtextblock
+textblock RESPONSE
+{
+    "thread_no": null,
+    "title": null,
+    "author": null,
+    "no": null,
+    "datetime": null,
+    "content": null,
+    "color": null
+}
+endtextblock
+
+function new_thread(title: string, author: string, no: number, datetime: string, content: string, color: string)
+    result = fromjson(THREAD)
+    result.title = title
+    result.author = author
+    result.no = no
+    result.datetime = datetime
+    result.content = content
+    result.color = color
+fend
+function new_response(thread_no: number, title: string, author: string, no: number, datetime: string, content: string, color: string)
+    result = fromjson(RESPONSE)
+    result.thread_no = thread_no
+    result.title = title
+    result.author = author
+    result.no = no
+    result.datetime = datetime
+    result.content = content
+    result.color = color
+fend

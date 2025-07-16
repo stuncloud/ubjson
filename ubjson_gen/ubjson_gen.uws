@@ -2,6 +2,8 @@ const BOARD_URI = 'https://www3.rocketbbs.com/13/bbs.cgi?id=umiumi'
 const BOARD_LOG = '&mode=view_log'
 const BOARD_PAGE = '&page='
 
+call ubjson_mod.uws
+
 browser = browsercontrol(BC_MSEDGE)
 tab = browser.new(BOARD_URI)
 ub = @{
@@ -16,6 +18,7 @@ for page = 2 to 20
     tab.navigate("<#BOARD_URI><#BOARD_PAGE><#page>")
     for form in tab.document.querySelectorAll('form[method=GET]')
         th = parse_thread(form)
+        th.file = "page=<#page>"
         ub.board += th
     next
 next
@@ -37,48 +40,7 @@ next
 json = tojson(ub, TRUE)
 fput(fopen('../ub.json', F_WRITE8 or F_AUTOCLOSE), json, F_ALLTEXT)
 
-textblock THREAD
-{
-    "title": null,
-    "author": null,
-    "no": null,
-    "datetime": null,
-    "content": null,
-    "color": null,
-    "response": []
-}
-endtextblock
-textblock RESPONSE
-{
-    "thread_no": null,
-    "title": null,
-    "author": null,
-    "no": null,
-    "datetime": null,
-    "content": null,
-    "color": null
-}
-endtextblock
 
-function new_thread(title: string, author: string, no: number, datetime: string, content: string, color: string)
-    result = fromjson(THREAD)
-    result.title = title
-    result.author = author
-    result.no = no
-    result.datetime = datetime
-    result.content = content
-    result.color = color
-fend
-function new_response(thread_no: number, title: string, author: string, no: number, datetime: string, content: string, color: string)
-    result = fromjson(RESPONSE)
-    result.thread_no = thread_no
-    result.title = title
-    result.author = author
-    result.no = no
-    result.datetime = datetime
-    result.content = content
-    result.color = color
-fend
 
 function parse_thread(form)
     tr = form.querySelectorAll('div>table>tbody>tr')
@@ -127,7 +89,7 @@ fend
 function parse_title(content: string)
     content = trim(content)
     slash = pos('/', content, -1)
-    title = trim(copy(content, 2, slash-2))
+    title = trim(copy(content, 1, slash-2), '★☆ ')
     author = trim(copy(content, slash+1))
     result = [title, author]
 fend
