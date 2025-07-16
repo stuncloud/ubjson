@@ -1,0 +1,85 @@
+// note: 旧掲示板のログは2025/07/16時点で以下から入手可能
+// https://web.archive.org/web/20180701072339/http://www.uwsc.info/boardlog.zip
+if length(PARAM_STR) < 1 then
+    raise("旧掲示板のhtmlフォルダのパスを指定してください", 'コマンドラインプション未指定')
+endif
+
+call ubjson_mod.uws
+
+ob = @{
+    "board": []
+}@
+
+dir = PARAM_STR[0]
+for file in getdir(dir, '*-*.html', TRUE, ORDERBY_NAME)
+    path = FSO.JoinPath(dir, file)
+    try
+        html = fget(fopen(path, F_READ or F_AUTOCLOSE), F_ALLTEXT)
+    except
+        print path
+        print TRY_ERRMSG
+        // 以下がSJISとして読めないっぽい
+        // 006-02.html
+        // 007-04.html
+        // 008-10.html
+        // 027-03.html
+        // 031-11.html
+        // 042-01.html
+        // VSCodeで事前にSJISで再保存したらいけた
+        // またはUTF8にしてcharsetもUTF8に変更して保存するか
+    endtry
+
+
+    html_node = parsehtml(html)
+
+    for node in html_node.find('form[method=post]')
+        th = parse_thread(node)
+        th.file = file
+        ob.board += th
+    next
+next
+
+json = tojson(ob, true)
+fput(fopen('../ub_old.json', F_WRITE8 or F_AUTOCLOSE), json, F_ALLTEXT)
+
+module FSO
+    dim obj
+    procedure FSO
+        obj = createoleobj('Scripting.FileSystemObject')
+    fend
+    function JoinPath(dir: string, file: string)
+        result = obj.BuildPath(dir, file)
+    fend
+endmodule
+
+function parse_thread(node)
+    titles = node.find('table[cellpadding="2"]')
+    contents = node.find('table[cellpadding="5"]')
+    datetimes = node.find('center td[align=right]')
+
+    title = titles[0].findfirst('font>b').textContent
+    author = titles[0].findfirst('small>b').textContent
+
+    smalls = datetimes[0].find('small')
+    datetime = replace(smalls[0].textContent, 'DATE：', '')
+    no = val(replace(smalls[1].textContent, 'No.', ''))
+
+    font = contents[0].findfirst('td:not([valign]):not([align])>font')
+    content = font.innerHTML
+    color = font.attr('color')
+
+    result = new_thread(title, author, no, datetime, content, color)
+
+    for _title, i in titles
+        if i > 0 then
+            title = _title.findfirst('font>b').textContent
+            author = _title.findfirst('small>b').textContent
+            datetime = replace(datetimes[i].findfirst('small').textContent, 'DATE：', '')
+            font = contents[i].findfirst('td:not([valign]):not([align])>font')
+            content = font.innerHTML
+            color = font.attr('color')
+            result.response += new_response(no, title, author, -1, datetime, content, color)
+        endif
+    next
+
+fend
