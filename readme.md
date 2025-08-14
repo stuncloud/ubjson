@@ -11,6 +11,7 @@
 - `ub_old.json`: json化された旧UWSC掲示板の内容
 - `ubjson_gen/ubjson_oldboard_gen.uws`: `ub_old.json`を出力するスクリプト
     - umiumiさん製過去ログ検索ツールのhtmlフォルダが別途必要
+- `Find-UwscBoard.ps1`: PowerShell用ログ検索スクリプト
 
 ### jsonファイルの構成
 
@@ -56,5 +57,12 @@
 
 ## 検索ツール
 
-今はまだないです\
-いずれ実装したい
+### PowerShell用スクリプト
+
+ub.json及びub_old.jsonの検索を行うスクリプトです\
+利用方法や詳細については以下で確認してください
+
+```powershell
+help .\Find-UwscBoard.ps1
+```
+
